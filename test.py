@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 import gridcut
 
-PW = 2
+PW = 3
 COST = 8
 SOURCE = np.array([[COST, COST, 0, 0],
                    [0, COST, COST, 0],
@@ -20,35 +20,76 @@ FIG_SIZE = 4
 
 
 def test_maxflow_2d_4c_simple(source=SOURCE, sink=SINK, pw=PW):
-    edges = np.ones((source.shape), dtype=np.float32) * pw
-    result = gridcut.maxflow_2D_4C(source.shape[1], source.shape[0],
-                                 source.ravel(), sink.ravel(),
-                                 edges.ravel(), edges.ravel(),
-                                 edges.ravel(), edges.ravel(),
-                                 n_threads=1, block_size=4)
+    """
+    
+    :param [[int]] source: 
+    :param [[int]] sink: 
+    :param int pw: 
+    """
+    result = gridcut.maxflow_2D_4C_potts(source.shape[1], source.shape[0],
+                                         source.ravel(), sink.ravel(), pw,
+                                         n_threads=2, block_size=1)
     assert np.array_equal(result.reshape(source.shape),
                           np.array([[0, 0, 1, 1],
                                     [1, 0, 0, 1],
                                     [1, 1, 0, 0]]))
 
-    result = gridcut.maxflow_2D_4C_potts(source.shape[1], source.shape[0],
-                                       source.ravel(), sink.ravel(), pw,
-                                       n_threads=2, block_size=1)
+    edges = np.ones((source.shape), dtype=np.float32)
+    result = gridcut.maxflow_2D_4C(source.shape[0], source.shape[1],
+                                   source.ravel(), sink.ravel(),
+                                   edges.ravel(), edges.ravel(),
+                                   edges.ravel(), edges.ravel(),
+                                   n_threads=1, block_size=4)
     assert np.array_equal(result.reshape(source.shape),
                           np.array([[0, 0, 1, 1],
                                     [1, 0, 0, 1],
                                     [1, 1, 0, 0]]))
+
+
+def test_expansion_2d_4c_simple(source=SOURCE, sink=SINK, pw=PW):
+    """
+    
+    :param [[int]] source: 
+    :param [[int]] sink: 
+    :param int pw: 
+    """
+    unary = np.rollaxis(np.array([source, sink]), 0, 3)
+    pairwise = np.array([[0, pw], [pw, 0]])
+    w, h = source.shape
+    edges_right = np.ones((w - 1, h), dtype=np.float32)
+    edges_down = np.ones((w, h - 1), dtype=np.float32)
+
+    result = gridcut.expansion_2D_4C(unary, pairwise,
+                                   edges_right, edges_down,
+                                   n_threads=1, block_size=4)
+    assert np.array_equal(result,
+                          np.array([[0, 0, 1, 1],
+                                    [1, 0, 0, 1],
+                                    [1, 1, 0, 0]]))
+
+    # result = gridcut.maxflow_2D_4C_potts(source.shape[1], source.shape[0],
+    #                                      source.ravel(), sink.ravel(), pw,
+    #                                      n_threads=2, block_size=1)
+    # assert np.array_equal(result.reshape(source.shape),
+    #                       np.array([[0, 0, 1, 1],
+    #                                 [1, 0, 0, 1],
+    #                                 [1, 1, 0, 0]]))
 
 
 def generate_image_unary_term_2cls(width=120, height=80):
-    """  """
+    """
+    
+    :param int width: 
+    :param int height: 
+    :return: 
+    """
     annot = np.zeros((height, width))
     annot[int(0.3 * height):int(0.8 * height),
           int(0.2 * width):int(0.7 * width)] = 1
-    noise = np.random.randn(height, width) - 0.5
+    noise = np.random.randn(height, width)
 
-    source = (0.5 + (1 - annot) * 2 + noise).astype(np.float32)
-    sink = (0.5 + annot * 2 + noise).astype(np.float32)
+    source = ((1 - annot) * 1. + noise).astype(np.float32)
+    sink = (annot * 1. + noise).astype(np.float32)
 
     fig = plt.figure(figsize=(2 * FIG_SIZE, FIG_SIZE))
     plt.subplot(1, 2, 1)
@@ -63,10 +104,16 @@ def generate_image_unary_term_2cls(width=120, height=80):
 
 
 def generate_image_unary_term_3cls(width=120, height=80):
+    """
+    
+    :param int width: 
+    :param int height: 
+    :return [[int]], [[[float]]]: 
+    """
     annot = np.zeros((height, width))
     annot[:, int(0.4 * width)] = 2
     annot[int(0.3 * height):int(0.8 * height),
-        int(0.2 * width):int(0.7 * width)] = 1
+          int(0.2 * width):int(0.7 * width)] = 1
     img = annot + np.random.randn(100, 100)
 
     unary = np.tile(img[:, :, np.newaxis], [1, 1, 3])
@@ -88,6 +135,12 @@ def generate_image_unary_term_3cls(width=120, height=80):
 
 
 def save_results(img, segm, fig_name=''):
+    """
+    
+    :param [[int]] img: 
+    :param [[int]] segm: 
+    :param str fig_name: 
+    """
     fig = plt.figure(figsize=(2 * FIG_SIZE, FIG_SIZE))
     plt.subplot(1, 2, 1), plt.title('image')
     plt.imshow(img, interpolation="nearest")
@@ -99,7 +152,12 @@ def save_results(img, segm, fig_name=''):
 
 
 def test_maxflow_2d_image(width=120, height=80, pw=PW):
-    """  """
+    """
+    
+    :param int width: 
+    :param int height: 
+    :param int pw: 
+    """
     img, source, sink = generate_image_unary_term_2cls(width, height)
 
     t = time.time()
@@ -119,6 +177,6 @@ def test_maxflow_2d_image(width=120, height=80, pw=PW):
                  fig_name='2cls_grid_labels_8c')
 
 
-# if __name__ == '__main__':
-#     test_maxflow_2d_4c_simple()
-#     test_maxflow_2d_image()
+if __name__ == '__main__':
+    test_maxflow_2d_4c_simple()
+    test_maxflow_2d_image()

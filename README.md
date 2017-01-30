@@ -1,4 +1,4 @@
-# pyGridCut
+# GridCut-python
 
 [![Build Status](https://travis-ci.org/Borda/GridCut-python.svg?branch=master)](https://travis-ci.org/Borda/GridCut-python)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e4562d3e10a94c4fa373630cab2e795f)](https://www.codacy.com/app/Borda/GridCut-python?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Borda/GridCut-python&amp;utm_campaign=Badge_Grade)
