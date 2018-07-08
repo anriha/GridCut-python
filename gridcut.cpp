@@ -13,7 +13,7 @@ typedef GridGraph_2D_8C<float, float, float> Grid_2d_8c;
 
 /*
 Extract the solution from a grid as a numpy int array.
-Grid must alread have been solved for this to work.
+Grid must already have been solved for this to work.
 Returns a single 1D numpy int array where result[x+y*width] is the binary label assigned to node x,y
 */
 template<class grid_type> static PyObject* grid_to_array(grid_type* grid,
@@ -41,13 +41,12 @@ Source and sink parameters should be a 1D numpy array with width*height elements
 Indexing should be done so that source[x+y*width] is the capacity of node located at (x,y)
 */
 static PyObject* gridcut_maxflow_2D_4C_potts(PyObject* self, PyObject *args,
-                                           PyObject *keywds)
+                                             PyObject *keywds)
 {
 	PyObject *source=NULL, *sink=NULL;
 	PyObject *source_arr=NULL, *sink_arr=NULL;
 	float pw=0;
 	int width, height, n_threads=1, block_size=0;
-
 
 	//parse arguments
 	static char *kwlist[] = {"width", "height", "source", "sink",
@@ -102,7 +101,6 @@ static PyObject* gridcut_maxflow_2D_4C_potts(PyObject* self, PyObject *args,
 };
 
 
-//def gridcut.2D_4C(int width, int height, source, sink, up, down, left, right)
 static PyObject* gridcut_maxflow_2D_4C(PyObject* self, PyObject *args, PyObject *keywds)
 {
 	PyObject *source=NULL, *sink=NULL, *up=NULL, *down=NULL, *left=NULL, *right=NULL;
@@ -137,7 +135,6 @@ static PyObject* gridcut_maxflow_2D_4C(PyObject* self, PyObject *args, PyObject 
 	float *l = (float*)PyArray_DATA(left_arr);
 	float *r = (float*)PyArray_DATA(right_arr);
 
-
 	//pass it to the gridcut
 	PyObject *result = NULL;
 
@@ -170,7 +167,7 @@ static PyObject* gridcut_maxflow_2D_4C(PyObject* self, PyObject *args, PyObject 
 
 
 static PyObject* gridcut_maxflow_2D_8C_potts(PyObject* self, PyObject *args,
-                                           PyObject *keywds)
+                                             PyObject *keywds)
 {
 	PyObject *source=NULL, *sink=NULL;
 	PyObject *source_arr=NULL, *sink_arr=NULL;
@@ -222,29 +219,60 @@ static PyObject* gridcut_maxflow_2D_8C_potts(PyObject* self, PyObject *args,
     return result;
 };
 
-static PyMethodDef gridcut_funcs[] = {
+// Mapping between python and c function names.
+static PyMethodDef gridcutModule_methods[] = {
 
     {"maxflow_2D_4C", (PyCFunction)gridcut_maxflow_2D_4C,
-     METH_VARARGS | METH_KEYWORDS, "a message"},
+     METH_VARARGS | METH_KEYWORDS, "maxflow 2D 4C"},
 
-     {"maxflow_2D_4C_potts", (PyCFunction)gridcut_maxflow_2D_4C_potts,
-     METH_VARARGS | METH_KEYWORDS, "a message"},
+    {"maxflow_2D_4C_potts", (PyCFunction)gridcut_maxflow_2D_4C_potts,
+     METH_VARARGS | METH_KEYWORDS, "maxflow 2D 4C potts"},
 
-     {"maxflow_2D_8C_potts", (PyCFunction)gridcut_maxflow_2D_8C_potts,
-     METH_VARARGS | METH_KEYWORDS, "a message"},
+    {"maxflow_2D_8C_potts", (PyCFunction)gridcut_maxflow_2D_8C_potts,
+     METH_VARARGS | METH_KEYWORDS, "maxflow 2D 8C potts"},
 
     {NULL}
 };
 
 
-extern "C"
-{
+#if PY_MAJOR_VERSION >= 3
 
-	void initgridcut(void)
-	{
-	    Py_InitModule3("gridcut", gridcut_funcs,
-	                   "Extension module example!");
-	    import_array();
-	}
+    // SEE: http://python3porting.com/cextensions.html
+    #if PY_MAJOR_VERSION >= 3
+        static struct PyModuleDef moduledef = {
+            PyModuleDef_HEAD_INIT,
+            "gridcut",           /* m_name */
+            "Module extension.", /* m_doc */
+            -1,                  /* m_size */
+            gridcutModule_methods,       /* m_methods */
+            NULL,                /* m_reload */
+            NULL,                /* m_traverse */
+            NULL,                /* m_clear */
+            NULL,                /* m_free */
+        };
+    #endif
 
-}
+    /* Module entrypoint */
+    PyMODINIT_FUNC
+    PyInit_gridcut(void)
+    {
+        import_array();
+
+        return PyModule_Create(&moduledef);
+    }
+
+#else
+
+    extern "C"
+    {
+        void initgridcut(void)
+        {
+            import_array();
+
+            Py_InitModule3("gridcut", gridcutModule_methods,
+                           "Module extension.");
+        }
+
+    }
+
+#endif
