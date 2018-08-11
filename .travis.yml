@@ -38,15 +38,15 @@ install:
 script:
   - python setup.py build_ext --inplace
   - ls *.so
+  - python setup.py check -m -s
   - python setup.py install
-  - rm *.so
+  - rm *.so  # remove lib so the installed version is used
 #  - nosetests test.py -v --exe --with-doctest --with-xunit --with-coverage  --cover-package=gridcut
   - coverage run --source gridcut -m py.test test.py -v --doctest-modules
 
 after_success:
-  - echo Build succesful!
-# the package does not have python code for coverage
-#  - codecov
-#  - coverage xml
-#  - python-codacy-coverage -r coverage.xml
-#  - coverage report
+  # the package does not have python code for coverage
+  - codecov
+  - coverage xml
+  - python-codacy-coverage -r coverage.xml
+  - coverage report

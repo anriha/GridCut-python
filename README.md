@@ -28,7 +28,7 @@ For installation use previous commands it does following steps:
 
 Note, that downloading the source cede you agree with GridCut [license](http://www.gridcut.com/licensing.php) 
 
-## Show test results
+## Show examples
 
 ### Source-Sink segmentation
 
