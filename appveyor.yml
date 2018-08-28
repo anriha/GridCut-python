@@ -12,27 +12,27 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - PYTHON: "COST:\\Python27"
+    - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.x"
       PYTHON_ARCH: "32"
 
-    - PYTHON: "COST:\\Python27-x64"
+    - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.x"
       PYTHON_ARCH: "64"
 
-    - PYTHON: "COST:\\Python35"
+    - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x"
       PYTHON_ARCH: "32"
 
-    - PYTHON: "COST:\\Python35-x64"
+    - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.x"
       PYTHON_ARCH: "64"
 
-    - PYTHON: "COST:\\Python36"
+    - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "32"
 
-    - PYTHON: "COST:\\Python36-x64"
+    - PYTHON: "C:\\Python36-x64"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "64"
 
@@ -43,8 +43,13 @@ install:
   # purpose but it is problematic because it tends to cancel builds pushed
   # directly to master instead of just PR builds (or the converse).
   # credits: JuliaLang developers.
+  - SET PATH=%PYTHON%;%PYTHON%\Scripts;%path%
+  - python --version
+  - pip --version
   - pip install -r requirements.txt
   - pip install pytest coverage
+  - pip freeze
+  - dir
 
 build_script:
   # Build the compiled extension
@@ -55,5 +60,5 @@ test_script:
   - coverage run --source gridcut -m py.test test.py -v --doctest-modules
 
 on_success:
-  # Could run coveralls here but will leave that to travis tests
+  # Could run coveralls hauthere but will leave that to travis tests
   - python setup.py install
