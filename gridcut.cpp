@@ -5,6 +5,7 @@
 #include <Python.h>
 #include <math.h>
 #include <numpy/arrayobject.h>
+#include <iostream>
 
 typedef GridGraph_2D_4C<float, float, float> Grid_2d_4c;
 typedef GridGraph_2D_4C_MT<float, float, float> Grid_2d_4c_mt;
@@ -161,37 +162,59 @@ static PyObject *gridcut_maxflow_2D_4C(PyObject *self, PyObject *args,
 
 static PyObject *gridcut_expansion_2D_4C(PyObject *self, PyObject *args,
                                          PyObject *keywds) {
-  PyObject *data_costs = NULL, *smoothness_costs = NULL;
+  PyObject *data_costs = NULL, *image = NULL;
   int width, height, num_labels;
 
   // parse arguments
-  static char *kwlist[] = {"width",      "height",           "num_labels",
-                           "data_costs", "smoothness_costs", NULL};
+  static char *kwlist[] = {"width",      "height", "num_labels",
+                           "data_costs", "image",  NULL};
 
   if (!PyArg_ParseTupleAndKeywords(args, keywds, "iiiOO", kwlist, &width,
-                                   &height, &num_labels, &data_costs,
-                                   &smoothness_costs))
+                                   &height, &num_labels, &data_costs, &image))
     return NULL;
 
   data_costs = PyArray_FROM_OTF(data_costs, NPY_INT32, NPY_IN_ARRAY);
-  smoothness_costs =
-      PyArray_FROM_OTF(smoothness_costs, NPY_INT32, NPY_IN_ARRAY);
+  image = PyArray_FROM_OTF(image, NPY_FLOAT32, NPY_IN_ARRAY);
 
-  if (data_costs == NULL || smoothness_costs == NULL)
+  if (data_costs == NULL || image == NULL)
     return NULL;
 
   // print out dim0
   int *data = (int *)PyArray_DATA(data_costs);
-  int *smooth = (int *)PyArray_DATA(smoothness_costs);
+  float *img = (float *)PyArray_DATA(image);
+  int **smoothness_costs = new int *[width * height * 2];
+
+  for (int x = 0; x < width; x++)
+    for (int y = 0; y < height; y++) {
+      const int xy = x + y * width;
+      smoothness_costs[xy * 2 + 0] = new int[num_labels * num_labels];
+      smoothness_costs[xy * 2 + 1] = new int[num_labels * num_labels];
+
+      for (int label = 0; label < num_labels; label++)
+        for (int other_label = 0; other_label < num_labels; other_label++) {
+#define WEIGHT(A) (1 + 1000 * std::exp(-((A) * (A)) / 0.05))
+
+          smoothness_costs[xy * 2 + 0][label + other_label * num_labels] =
+              (x < width - 1 && label != other_label)
+                  ? WEIGHT(img[(x + 1) + y * width] - img[x + y * width])
+                  : 0;
+          smoothness_costs[xy * 2 + 1][label + other_label * num_labels] =
+              (y < height - 1 && label != other_label)
+                  ? WEIGHT(img[x + (y + 1) * width] - img[x + y * width])
+                  : 0;
+
+#undef WEIGHT
+        }
+    }
 
   // pass it to the gridcut
   PyObject *result = NULL;
 
   AlphaExpansion_2D_4C<int, int, int> *expansion =
-      new AlphaExpansion_2D_4C<int, int, int>(width, height, num_labels,
-                                              data, smooth);
+      new AlphaExpansion_2D_4C<int, int, int>(width, height, num_labels, data,
+                                              smoothness_costs);
   expansion->perform();
-  int* labeling = expansion->get_labeling();
+  int *labeling = expansion->get_labeling();
 
   npy_intp outdims[1];
   outdims[0] = width * height;
@@ -205,7 +228,7 @@ static PyObject *gridcut_expansion_2D_4C(PyObject *self, PyObject *args,
   delete expansion;
 
   Py_DECREF(data_costs);
-  Py_DECREF(smoothness_costs);
+  Py_DECREF(image);
 
   return result;
 };
@@ -271,6 +294,9 @@ static PyMethodDef gridcutModule_methods[] = {
 
     {"maxflow_2D_8C_potts", (PyCFunction)gridcut_maxflow_2D_8C_potts,
      METH_VARARGS | METH_KEYWORDS, "maxflow 2D 8C potts"},
+
+    {"expansion_2D_4C", (PyCFunction)gridcut_expansion_2D_4C,
+     METH_VARARGS | METH_KEYWORDS, "expansion 2D 4C"},
 
     {NULL}};
 
