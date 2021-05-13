@@ -21,6 +21,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 URL_ZIP = 'http://gridcut.com/dl/%s' % PACKAGE
 PATH_CODE = os.path.join(HERE, 'code')
 PATH_GRIDCUT = os.path.join(PATH_CODE, 'include', 'GridCut')
+PATH_GRIDCUT_2 = os.path.join(PATH_CODE, 'include')
 PATH_ALPHAEXP = os.path.join(PATH_CODE, 'examples', 'include', 'AlphaExpansion')
 VERSION = os.path.splitext(PACKAGE)[0].split('-')[-1]  # parse version
 
@@ -67,7 +68,7 @@ setup(
         'gridcut',
         ['gridcut.cpp'],
         language='c++',
-        include_dirs=[PATH_GRIDCUT, PATH_ALPHAEXP],
+        include_dirs=[PATH_GRIDCUT, PATH_ALPHAEXP, PATH_GRIDCUT_2],
         extra_compile_args=["-fpermissive"]
         )
     ],
