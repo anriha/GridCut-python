@@ -3,9 +3,9 @@
 #include <GridGraph_2D_4C_MT.h>
 #include <GridGraph_2D_8C.h>
 #include <Python.h>
+#include <iostream>
 #include <math.h>
 #include <numpy/arrayobject.h>
-#include <iostream>
 
 typedef GridGraph_2D_4C<float, float, float> Grid_2d_4c;
 typedef GridGraph_2D_4C_MT<float, float, float> Grid_2d_4c_mt;
@@ -192,15 +192,17 @@ static PyObject *gridcut_expansion_2D_4C(PyObject *self, PyObject *args,
 
       for (int label = 0; label < num_labels; label++)
         for (int other_label = 0; other_label < num_labels; other_label++) {
-#define WEIGHT(A) (1 + 1000 * std::exp(-((A) * (A)) / 0.05))
+/* #define WEIGHT(A) (1 + 1000 * std::exp(-((A) * (A)) / 0.001)) */
+#define WEIGHT(A, B) (1 + 1000 * std::min(A, B))
+/* #define WEIGHT(A) A > 0 ? (1 / (1 + ((A * A) / 64))) : 0 */
 
           smoothness_costs[xy * 2 + 0][label + other_label * num_labels] =
               (x < width - 1 && label != other_label)
-                  ? WEIGHT(img[(x + 1) + y * width] - img[x + y * width])
+                  ? WEIGHT(img[(x + 1) + y * width], img[x + y * width])
                   : 0;
           smoothness_costs[xy * 2 + 1][label + other_label * num_labels] =
               (y < height - 1 && label != other_label)
-                  ? WEIGHT(img[x + (y + 1) * width] - img[x + y * width])
+                  ? WEIGHT(img[x + (y + 1) * width], img[x + y * width])
                   : 0;
 
 #undef WEIGHT
